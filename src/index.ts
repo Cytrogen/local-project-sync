@@ -193,35 +193,35 @@ server.tool(
     fileTypes: z.array(z.string()).optional().describe("文件类型过滤，如 ['.ts', '.tsx', '.js']"),
     maxResults: z.number().optional().default(50).describe("最大结果数量"),
     caseSensitive: z.boolean().optional().default(false).describe("是否区分大小写"),
+    useRegex: z.boolean().optional().default(false).describe("是否启用正则表达式模式"),
   },
-  async ({ query, fileTypes = ['.ts', '.tsx', '.js', '.jsx'], maxResults = 50, caseSensitive = false }) => {
+  async ({ query, fileTypes = ['.ts', '.tsx', '.js', '.jsx'], maxResults = 50, caseSensitive = false, useRegex = false }) => {
     let results: Array<{file: string, lineNumber: number, content: string}> = [];
-
+    
     for (const [prefix, absolutePath] of pathRegistry.entries()) {
       try {
         const files = await getFilesRecursive(absolutePath);
-        const filteredFiles = files.filter(file =>
+        const filteredFiles = files.filter(file => 
           fileTypes.some((ext: string) => file.endsWith(ext))
         );
 
-        // 不要在这里就限制文件数量，先处理所有文件
         for (const file of filteredFiles) {
-          // 在结果层面控制数量，而不是在文件层面
           if (results.length >= maxResults) break;
-
+          
           try {
             const fullPath = path.join(absolutePath, file);
-
-            // 检查文件是否真的存在
             const stats = await fs.stat(fullPath);
             if (!stats.isFile()) continue;
-
+            
             const content = await fs.readFile(fullPath, 'utf-8');
             const lines = content.split('\n');
-
+            
             const flags = caseSensitive ? 'g' : 'gi';
-            const regex = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
-
+            
+            // 🔧 关键修复：根据useRegex参数决定是否转义
+            const processedQuery = useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(processedQuery, flags);
+            
             lines.forEach((line, index) => {
               if (results.length >= maxResults) return;
               if (regex.test(line)) {
@@ -233,7 +233,6 @@ server.tool(
               }
             });
           } catch (error: any) {
-            // 只在调试模式下输出错误，避免干扰用户
             if (process.env.NODE_ENV === 'development') {
               console.error(`搜索文件 ${file} 时出错:`, error.message);
             }
@@ -245,11 +244,11 @@ server.tool(
       }
     }
 
-    const resultText = results.length > 0
-      ? `找到 ${results.length} 个匹配结果:\n---\n` +
-      results.map(r => `${r.file}:${r.lineNumber}\n${r.content}`).join('\n\n')
+    const resultText = results.length > 0 
+      ? `找到 ${results.length} 个匹配结果:\n---\n` + 
+        results.map(r => `${r.file}:${r.lineNumber}\n${r.content}`).join('\n\n')
       : `未找到包含 "${query}" 的代码`;
-
+    
     return { content: [{ type: "text", text: resultText }] };
   }
 );

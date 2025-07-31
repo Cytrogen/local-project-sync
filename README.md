@@ -10,7 +10,7 @@
 
 1. `list_project_files`：递归地列出所有已配置目录中的文件，提供项目全貌
 2. `read_file_content`：读取单个指定文件的完整内容，用于深度代码分析
-3. `search_code_content`：在整个代码库中进行文本或者正则表达式搜索，快速定位代码片段
+3. `search_code_content`：在整个代码库中进行智能搜索，支持普通文本和正则表达式两种模式，能够在深层目录结构中精确定位代码片段
 4. `read_multiple_files`：使用 `glob` 模式批量读取多个文件的内容，方便提供模块级上下文
 5. `analyze_project_structure`：生成项目结构的概览和统计信息，帮助快速了解项目
 
