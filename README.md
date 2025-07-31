@@ -8,11 +8,26 @@
 
 本项目通过实现多个 MCP 工具，为 AI 提供了与本地文件系统交互的超能力：
 
+### 基础工具
+
 1. `list_project_files`：递归地列出所有已配置目录中的文件，提供项目全貌
 2. `read_file_content`：读取单个指定文件的完整内容，用于深度代码分析
-3. `search_code_content`：在整个代码库中进行智能搜索，支持普通文本和正则表达式两种模式，能够在深层目录结构中精确定位代码片段
-4. `read_multiple_files`：使用 `glob` 模式批量读取多个文件的内容，方便提供模块级上下文
-5. `analyze_project_structure`：生成项目结构的概览和统计信息，帮助快速了解项目
+3. `analyze_project_structure`：生成项目结构的概览和统计信息，帮助快速了解项目
+
+### 智能搜索工具
+
+1. `search_code_content`：在整个代码库中进行智能搜索，支持：
+
+   - 普通文本搜索和正则表达式搜索 
+   - 深层目录结构精确定位 
+   - 可配置的上下文行数，避免返回过多内容 
+   - 文件类型过滤和结果数量控制
+
+### 高效读取工具
+
+1. `read_multiple_files`：使用 `glob` 模式批量读取多个文件的内容，方便提供模块级上下文
+2. `extract_function_definition`：精确提取指定函数/方法的完整定义，包括注释和装饰器
+3. `read_file_section`：读取文件的指定行范围，获取精确的代码片段
 
 ## 快速开始
 
@@ -41,8 +56,8 @@
 
        ```ts src/index.ts
        const SYNC_PATHS = [
-           "D:\\your\\project\\directory\\src",
-           "D:\\another\\project\\directory\\src"
+         "D:\\your\\project\\directory\\src",
+         "D:\\another\\project\\directory\\src"
        ];
        ```
 4. 构建项目
@@ -72,14 +87,14 @@
     
     ```json
     {
-        "mcpServers": {
-            "localProjectSync": {
-                "command": "node",
-                "args": [
-                    "D:\\path\\to\\your\\mcp-local-sync\\build\\index.js"
-                ]
-            }
+      "mcpServers": {
+        "localProjectSync": {
+          "command": "node",
+          "args": [
+            "D:\\path\\to\\your\\mcp-local-sync\\build\\index.js"
+          ]
         }
+      }
     }
     ```
    
@@ -87,52 +102,128 @@
 
    完全退出并重新启动 Claude 桌面应用。成功后，你可以在聊天输入框下的 `Search and Tools` 菜单项内看到 `localProjectSync` 这个工具。
 
-## 工具用法详解
+## 使用示例
 
-下面是每个工具的详细用途、差异和使用场景：
+### 基础项目探索
 
-1. `list_project_files`
+```javascript
+// 1. 了解项目结构
+list_project_files()
 
-   - 用途：获取一个完整的、递归的文件列表
-   - 差异：与其它工具不同，它不关心文件内容，只提供文件结构的全景图
-   - 使用场景：
-     - 当你刚接触一个项目，想知道它包含了哪些文件时
-     - 当你不确定某个文件的确切路径或名称时
+// 2. 分析项目架构
+analyze_project_structure({
+  scope: "backend",
+  depth: 3
+})
+```
 
-2. `read_file_content`
+### 智能代码搜索
 
-   - 用途：读取单个文件的完整内容
-   - 差异：目标明确，只针对一个文件。AI 在进行深度分析前，通常会先调用它来获取上下文
-   - 使用场景：
-     - 让 AI 分析、重构或解释某个特定文件的代码
-     - 修复某个文件中的 bug
+```javascript
+// 普通文本搜索
+search_code_content({
+  query: "EmailTemplateService",
+  fileTypes: [".ts"],
+  maxResults: 10
+})
 
-3. `search_code_content`
+// 正则表达式搜索多个方法
+search_code_content({
+  query: "markFieldProblems|requestClientRevision|submitRevision",
+  fileTypes: [".ts", ".js"],
+  maxResults: 10,
+  useRegex: true
+})
 
-   - 用途: 在所有已配置的文件中搜索一个关键词或正则表达式
-   - 差异: 适合大海捞针（当你只记得一个函数名或一个特定的字符串，但不知道它在哪个文件里时）
-   - 使用场景：
-     - 查找某个函数或变量在整个项目中的所有引用
-     - 定位所有使用了某个特定 API 或配置项的地方
+// 搜索并返回上下文
+search_code_content({
+  query: "async function",
+  contextLines: 5,  // 前后各5行上下文
+  maxResults: 8
+})
+```
 
-4. `read_multiple_files`
+### 精确代码提取
 
-   - 用途: 使用 `glob` 模式一次性读取多个文件的内容
-   - 差异: `read_file_content` 的批量版本。它能高效地为 AI 提供一个完整模块或一组相关文件的上下文
-   - 使用场景：
-     - 让 AI 理解一个完整的业务模块（例如，某个用户认证模块下的所有 `services` 和 `controllers`）
-     - 比较多个相似配置文件之间的差异
+```javascript
+// 提取完整函数定义（推荐用法）
+extract_function_definition({
+  filePath: "[backend/src]/modules/email/services/email-template.service.ts",
+  functionName: "renderTemplate",
+  includeComments: true,
+  includeDecorators: true
+})
 
-5. `analyze_project_structure`
+// 读取指定行范围
+read_file_section({
+  filePath: "[backend/src]/main.ts",
+  startLine: 1,
+  endLine: 50,
+  showLineNumbers: true
+})
+```
 
-   - 用途: 提供一个高层次的项目结构概览和代码统计
-   - 差异: 不返回代码内容，而是返回元数据（metadata）。它像一个项目“体检报告”
-   - 使用场景：
-     - 快速了解一个陌生项目的技术栈和规模（例如，TS 文件和 JS 文件的比例）
-     - 向团队成员介绍项目的大致模块划分
+### 批量文件分析
+
+```javascript
+// 读取模块内的所有服务
+read_multiple_files({
+  patterns: ["modules/*/services/*.service.ts"],
+  maxFiles: 10
+})
+
+// 读取配置相关文件
+read_multiple_files({
+  patterns: ["config/*.ts", "*.config.ts"],   
+  maxFiles: 5
+})
+```
+
+### 组合使用示例
+
+```text
+// 完整的代码探索流程
+1. analyze_project_structure() // 了解架构
+2. search_code_content({query: "UserService", useRegex: false}) // 找到位置
+3. extract_function_definition({functionName: "createUser"}) // 提取具体方法
+4. read_multiple_files({patterns: ["**/user*.ts"]}) // 查看相关文件
+```
+
+### 高级搜索技巧
+
+```javascript
+// 查找所有 service 类
+search_code_content({
+  query: "export class.*Service",
+  useRegex: true,
+  fileTypes: [".ts"]
+})
+
+// 查找特定装饰器的使用
+search_code_content({
+  query: "@Injectable|@Controller|@Service",
+  useRegex: true,
+  contextLines: 3
+})
+```
 
 ## 注意事项
 
 - 安全: 本工具具有读取指定目录内所有文件的权限。请确保你配置的 `SYNC_PATHS` 指向的是安全的项目目录，切勿将其指向包含敏感信息（如私钥、密码文件等）的系统目录
 - 性能: 对于包含数十万个文件的超大型项目，`list_project_files` 和 `search_code_content` 的首次执行可能会比较慢
 - 路径格式: 在与 AI 交互时，请尽量使用工具返回的、带前缀的完整文件路径（例如 `[backend/src]/main.ts`），以确保 AI 能准确调用工具
+
+## 更新日志
+
+### v3.0.0
+
+- 新增 `extract_function_definition` 工具 
+- 新增 `read_file_section` 工具 
+- `search_code_content` 支持正则表达式和上下文行 
+- 修复深层目录搜索问题 
+- 优化conversation length使用
+
+### v2.0.0
+
+- 新增 `search_code_content` 和 `read_multiple_files`
+- 新增 `analyze_project_structure`
